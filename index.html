@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>เกมผจญภัย Q&A</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      .btn {
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+      .answer-option {
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+      }
+      .answer-option:hover {
+        background-color: #f0f0f0;
+      }
+      .answer-option.selected {
+        background-color: #667eea;
+        color: white;
+        border-color: #667eea;
+      }
+      .drop-zone {
+        border: 2px dashed #cbd5e0;
+        transition: background-color 0.3s;
+      }
+      .drop-zone.drag-over {
+        background-color: #e9d5ff;
+      }
+      .draggable {
+        cursor: grab;
+      }
+      .draggable:active {
+        cursor: grabbing;
+      }
+      #certificate {
+        border: 10px solid #764ba2;
+        background: linear-gradient(to bottom right, #f0f9ff, #e0e7ff);
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .matching-pair {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .matching-item {
+        padding: 0.75rem;
+        background-color: #f3f4f6;
+        border-radius: 0.5rem;
+        width: 48%;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center min-h-screen p-4 text-gray-800">
+    <div id="game-container" class="w-full max-w-3xl mx-auto">
+      <!-- Start Screen -->
+      <div id="start-screen" class="card p-8 text-center fade-in">
+        <h1 class="text-4xl font-bold mb-4 text-gray-900">เกมผจญภัยไซเบอร์!</h1>
+        <p class="text-lg text-gray-600 mb-6">
+          ทดสอบความรู้พลเมืองดิจิทัลของคุณกับ 30 คำถามที่ไม่เหมือนใคร!
+          กรอกชื่อเพื่อเริ่มเล่นและรับใบประกาศนียบัตรกันเลย!
+        </p>
+        <input
+          type="text"
+          id="player-name"
+          placeholder="กรอกชื่อของคุณ"
+          class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-purple-500"
+        />
+        <p id="start-feedback" class="text-red-500 h-6 mb-2"></p>
+        <button
+          id="start-btn"
+          class="btn bg-purple-600 text-white font-bold py-3 px-8 rounded-lg w-full text-lg hover:bg-purple-700"
+        >
+          เริ่มเกม
+        </button>
+      </div>
+
+      <!-- Game Screen -->
+      <div id="game-screen" class="card p-8 hidden fade-in">
+        <div class="flex justify-between items-center mb-4">
+          <div id="question-counter" class="text-lg font-semibold">
+            คำถาม 1/30
+          </div>
+          <div id="score-counter" class="text-lg font-semibold">คะแนน: 0</div>
+        </div>
+        <h2 id="question-text" class="text-2xl font-bold mb-6 text-center"></h2>
+
+        <div
+          id="answer-area"
+          class="mb-6 min-h-[250px] flex items-center justify-center"
+        ></div>
+
+        <div class="flex justify-between items-center mt-6">
+          <button
+            id="hint-btn"
+            class="btn bg-yellow-400 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-yellow-500"
+          >
+            คำใบ้
+          </button>
+          <button
+            id="submit-btn"
+            class="btn bg-green-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-green-600"
+          >
+            ส่งคำตอบ
+          </button>
+        </div>
+        <div
+          id="feedback-area"
+          class="mt-4 text-center font-semibold text-lg h-8"
+        ></div>
+      </div>
+
+      <!-- Certificate Screen -->
+      <div id="certificate-screen" class="hidden text-center fade-in">
+        <div id="certificate-wrapper">
+          <div id="certificate" class="card p-8 relative">
+            <h1
+              class="text-5xl font-bold text-purple-800"
+              style="font-family: 'Georgia', serif"
+            >
+              ใบประกาศนียบัตร
+            </h1>
+            <p class="text-2xl mt-8">ขอมอบใบประกาศนียบัตรนี้เพื่อแสดงว่า</p>
+            <p
+              id="certificate-name"
+              class="text-4xl font-semibold my-4 border-b-2 border-dotted border-gray-700 inline-block"
+            ></p>
+            <p class="text-2xl">ได้ผ่านการทดสอบความรู้พลเมืองดิจิทัล</p>
+            <p id="certificate-score" class="text-3xl mt-6 font-bold"></p>
+          </div>
+        </div>
+        <div
+          id="answer-summary"
+          class="mt-8 text-left max-w-lg mx-auto text-sm"
+        ></div>
+        <div class="mt-8 flex space-x-4 justify-center">
+          <button
+            id="play-again-btn"
+            class="btn bg-purple-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-purple-700"
+          >
+            เล่นอีกครั้ง
+          </button>
+          <button
+            id="download-btn"
+            class="btn bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-700"
+          >
+            ดาวน์โหลด
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const questions = [
+        // ชุดที่ 1
+        {
+          question: "โลกดิจิทัลคืออะไร",
+          type: "mcq",
+          options: [
+            "โลกแห่งความจริงที่จับต้องได้",
+            "โลกเสมือนที่สร้างขึ้นคู่ขนานกับโลกความจริง",
+            "โลกที่มีแต่ข้อมูลข่าวสารที่ไม่ถูกต้อง",
+            "โลกที่จำกัดอยู่แค่ในคอมพิวเตอร์เท่านั้น",
+          ],
+          answer: "โลกเสมือนที่สร้างขึ้นคู่ขนานกับโลกความจริง",
+          hint: "เป็นโลกที่ถูกสร้างขึ้นโดยอุปกรณ์อิเล็กทรอนิกส์และอินเทอร์เน็ต",
+        },
+        {
+          question: "ข้อใดต่อไปนี้ 'ไม่ใช่' ส่วนหนึ่งของอัตลักษณ์ดิจิทัล",
+          type: "mcq",
+          options: [
+            "ชื่อ-นามสกุลจริง",
+            "รูปภาพประจำตัว",
+            "พฤติกรรมและประวัติการดูหนัง ฟังเพลงออนไลน์",
+            "ลายเซ็นบนเอกสารทางกายภาพ",
+          ],
+          answer: "ลายเซ็นบนเอกสารทางกายภาพ",
+          hint: "เป็นส่วนหนึ่งของอัตลักษณ์ในโลกจริง แต่ไม่ใช่ในโลกดิจิทัล",
+        },
+        {
+          question:
+            "เติมคำในช่องว่าง: 'การเป็น ______ คือการใช้ชีวิตบนโลกดิจิทัลอย่างรู้เท่าทัน'",
+          type: "text_fill",
+          answer: "พลเมืองดิจิทัล",
+          hint: "ช่วยให้เราใช้ชีวิตในโลกดิจิทัลได้อย่างรู้เท่าทัน มีความมั่นคงปลอดภัย",
+        },
+        {
+          question: "จับคู่ลักษณะเด่นของการทำกิจกรรมในโลกดิจิทัลกับโลกความจริง",
+          type: "matching",
+          pairs: [
+            { item: "อ่านข่าวจากหนังสือพิมพ์", match: "โลกความจริง" },
+            { item: "เล่นเกมกับคนจำนวนมากพร้อมกัน", match: "โลกดิจิทัล" },
+            {
+              item: "ปรึกษาเรื่องซับซ้อนกับผู้เชี่ยวชาญโดยตรง",
+              match: "โลกความจริง",
+            },
+            {
+              item: "ดูหนังฟังเพลงได้ไม่จำกัดเวลาและสถานที่",
+              match: "โลกดิจิทัล",
+            },
+          ],
+          options: ["โลกดิจิทัล", "โลกความจริง"],
+          hint: "กิจกรรมไหนทำผ่านอินเทอร์เน็ตได้ และกิจกรรมไหนต้องทำแบบต่อหน้า",
+        },
+        {
+          question:
+            "การใช้ถ้อยคำรุนแรงในการโต้ตอบบนโลกออนไลน์ มีผลไม่ต่างจากการแสดงอารมณ์ทางสีหน้าและท่าทางในโลกความจริง",
+          type: "true_false",
+          answer: "ถูก",
+          hint: "เพื่อนที่อ่านข้อความจะรับรู้และจินตนาการถึงอารมณ์และท่าทางของเราได้",
+        },
+        {
+          question:
+            "หากไม่แน่ใจว่าข้อมูลที่ได้รับเป็นความจริงหรือไม่ ควรทำอย่างไรตามหลัก Netiquette?",
+          type: "mcq",
+          options: [
+            "แชร์ต่อทันทีเพื่อถามคนอื่น",
+            "เก็บไว้กับตัวและไม่แชร์ต่อจนกว่าจะตรวจสอบได้",
+            "โพสต์ลงโซเชียลส่วนตัวให้เพื่อนช่วยตรวจ",
+            "เชื่อตามความรู้สึกของตนเอง",
+          ],
+          answer: "เก็บไว้กับตัวและไม่แชร์ต่อจนกว่าจะตรวจสอบได้",
+          hint: "ข้อความนั้นอาจเป็นเท็จ และเพื่อนอาจเชื่อจนเกิดผลเสียได้",
+        },
+        {
+          question:
+            "ข้อใดคือผลกระทบเชิงลบที่อาจเกิดขึ้นจากการสร้างอัตลักษณ์ดิจิทัลที่ไม่ดี? (เลือกได้หลายข้อ)",
+          type: "multi_select",
+          options: [
+            "ถูกระรานทางไซเบอร์",
+            "เสียโอกาสในการเรียนหรือการทำงาน",
+            "ความสัมพันธ์กับคนรอบตัวแย่ลง",
+            "ได้รับการชื่นชมมากขึ้น",
+          ],
+          answer: [
+            "ถูกระรานทางไซเบอร์",
+            "เสียโอกาสในการเรียนหรือการทำงาน",
+            "ความสัมพันธ์กับคนรอบตัวแย่ลง",
+          ],
+          hint: "การกระทำของเราในโลกออนไลน์ส่งผลต่อชีวิตจริงเสมอ",
+        },
+        {
+          question: "จงเรียงลำดับแนวทางการสร้างอัตลักษณ์ดิจิทัลที่ดี",
+          type: "sequence",
+          items: [
+            "อย่าให้ผู้อื่นรู้ข้อมูลของเรามากเกินไป",
+            "ปกป้องรหัสผ่านและเปลี่ยนบ่อยๆ",
+            "ตระหนักอยู่เสมอว่าโลกดิจิทัลไม่ใช่โลกจำลอง",
+            "ตรวจสอบตัวตนของเราบนโลกดิจิทัลอยู่เสมอ",
+          ],
+          answer: [
+            "ตระหนักอยู่เสมอว่าโลกดิจิทัลไม่ใช่โลกจำลอง",
+            "อย่าให้ผู้อื่นรู้ข้อมูลของเรามากเกินไป",
+            "ปกป้องรหัสผ่านและเปลี่ยนบ่อยๆ",
+            "ตรวจสอบตัวตนของเราบนโลกดิจิทัลอยู่เสมอ",
+          ],
+          hint: "เริ่มต้นจาก 'การตระหนักรู้' ก่อนเสมอ",
+        },
+        {
+          question:
+            "การใช้โทรศัพท์มือถือมากเกินไป อาจส่งผลเสียต่อสุขภาพกายอย่างไร",
+          type: "mcq",
+          options: [
+            "ทำให้สายตาดีขึ้น",
+            "ทำให้กระดูกสันหลังแข็งแรงขึ้น",
+            "ปวดหลัง ปวดคอ ตาอักเสบ นิ้วล็อก",
+            "ไม่มีผลกระทบต่อสุขภาพกาย",
+          ],
+          answer: "ปวดหลัง ปวดคอ ตาอักเสบ นิ้วล็อก",
+          hint: "การจ้องหน้าจอนานๆ และใช้มือพิมพ์หรือเลื่อนหน้าจอติดต่อกันนานๆ ทำให้เกิดอาการเหล่านี้",
+        },
+        {
+          question: "การระรานทางไซเบอร์ (Cyberbullying) คืออะไร",
+          type: "mcq",
+          options: [
+            "การหลอกลวงให้โอนเงินผ่านอีเมล",
+            "การกลั่นแกล้ง การให้ร้าย หรือการรังแกผู้อื่นในโลกดิจิทัล",
+            "การขโมยข้อมูลส่วนบุคคล",
+            "การใช้โปรแกรมคอมพิวเตอร์สร้างความเสียหาย",
+          ],
+          answer: "การกลั่นแกล้ง การให้ร้าย หรือการรังแกผู้อื่นในโลกดิจิทัล",
+          hint: "พฤติกรรมนี้อาจสร้างความทุกข์เล็กน้อยไปจนถึงการทำร้ายตัวเองได้",
+        },
+        // ชุดที่ 2
+        {
+          question: "ข้อใดคือความเสี่ยงที่อาจเกิดขึ้นจากการใช้โซเชียลมีเดีย?",
+          type: "mcq",
+          options: [
+            "การถูกขโมยข้อมูลส่วนตัว",
+            "การถูกระรานทางไซเบอร์",
+            "การรับข่าวสารปลอม",
+            "ถูกทุกข้อ",
+          ],
+          answer: "ถูกทุกข้อ",
+          hint: "โซเชียลมีเดียมีทั้งประโยชน์และโทษ ต้องใช้อย่างระมัดระวัง",
+        },
+        {
+          question:
+            "การตั้งค่าความเป็นส่วนตัวบนโซเชียลมีเดียเป็นเรื่องไม่จำเป็น",
+          type: "true_false",
+          answer: "ผิด",
+          hint: "การตั้งค่าความเป็นส่วนตัวช่วยป้องกันข้อมูลของเราจากผู้ไม่หวังดี",
+        },
+        {
+          question:
+            "ข้อใดคือตัวอย่างของ 'ข่าวปลอม' (Fake News)? (เลือกได้หลายข้อ)",
+          type: "multi_select",
+          options: [
+            "ข่าวพาดหัวเกินจริง",
+            "ข่าวที่ไม่มีแหล่งอ้างอิง",
+            "ข่าวที่มีเจตนาให้ร้ายผู้อื่น",
+            "ข่าวพยากรณ์อากาศจากกรมอุตุฯ",
+          ],
+          answer: [
+            "ข่าวพาดหัวเกินจริง",
+            "ข่าวที่ไม่มีแหล่งอ้างอิง",
+            "ข่าวที่มีเจตนาให้ร้ายผู้อื่น",
+          ],
+          hint: "ข่าวปลอมมักมีเนื้อหาเกินจริง, ไม่มีแหล่งอ้างอิง, หรือมีเจตนาให้ร้าย",
+        },
+        {
+          question: "เรียงลำดับขั้นตอนการตรวจสอบข่าวปลอม",
+          type: "sequence",
+          items: [
+            "หยุดแชร์",
+            "สอบถามผู้เชี่ยวชาญ",
+            "เช็คแหล่งที่มา",
+            "เปรียบเทียบกับสำนักข่าวอื่น",
+          ],
+          answer: [
+            "เช็คแหล่งที่มา",
+            "เปรียบเทียบกับสำนักข่าวอื่น",
+            "สอบถามผู้เชี่ยวชาญ",
+            "หยุดแชร์",
+          ],
+          hint: "เริ่มต้นจากการตรวจสอบแหล่งข่าวก่อนเสมอ",
+        },
+        {
+          question: "Digital Footprint คืออะไร",
+          type: "mcq",
+          options: [
+            "ขนาดของรองเท้าที่ซื้อออนไลน์",
+            "ร่องรอยดิจิทัลที่ผู้ใช้งานทิ้งไว้บนโลกออนไลน์",
+            "แอปพลิเคชันนับก้าวเดิน",
+            "ไวรัสคอมพิวเตอร์ชนิดหนึ่ง",
+          ],
+          answer: "ร่องรอยดิจิทัลที่ผู้ใช้งานทิ้งไว้บนโลกออนไลน์",
+          hint: "ทุกกิจกรรมของเราบนอินเทอร์เน็ตจะทิ้งร่องรอยไว้เสมอ",
+        },
+        {
+          question: "จับคู่ประเภทของ Digital Footprint กับตัวอย่าง",
+          type: "matching",
+          pairs: [
+            { item: "ประวัติการค้นหา", match: "Passive" },
+            { item: "IP Address", match: "Passive" },
+            { item: "การโพสต์รูปภาพ", match: "Active" },
+            { item: "การส่งอีเมล", match: "Active" },
+          ],
+          options: ["Active", "Passive"],
+          hint: "Active คือสิ่งที่เราตั้งใจทิ้งไว้, Passive คือสิ่งที่ถูกเก็บโดยที่เราอาจไม่รู้ตัว",
+        },
+        {
+          question: "เราสามารถลบ Digital Footprint ของเราให้หายไปทั้งหมดได้",
+          type: "true_false",
+          answer: "ผิด",
+          hint: "การลบร่องรอยดิจิทัลเป็นเรื่องยากมาก หรือแทบจะเป็นไปไม่ได้",
+        },
+        {
+          question: "ข้อใดคือวิธีป้องกันการถูกขโมยอัตลักษณ์ดิจิทัลที่ดีที่สุด",
+          type: "mcq",
+          options: [
+            "ใช้รหัสผ่านเดียวกันทุกเว็บไซต์",
+            "บอกรหัสผ่านให้เพื่อนสนิทรู้",
+            "ตั้งรหัสผ่านที่คาดเดายากและเปิดใช้งานการยืนยันตัวตนสองขั้นตอน",
+            "ไม่ใช้โซเชียลมีเดียเลย",
+          ],
+          answer:
+            "ตั้งรหัสผ่านที่คาดเดายากและเปิดใช้งานการยืนยันตัวตนสองขั้นตอน",
+          hint: "การป้องกันหลายชั้นย่อมดีกว่าชั้นเดียว",
+        },
+        {
+          question:
+            "การหลอกลวงทางออนไลน์เพื่อให้ได้มาซึ่งข้อมูลส่วนตัว เรียกว่า ______",
+          type: "text_fill",
+          answer: "ฟิชชิ่ง",
+          hint: "มาจากการเลียนเสียงคำว่า 'Fishing' ที่แปลว่าตกปลา",
+        },
+        {
+          question:
+            "ข้อใดเป็นสัญญาณเตือนของอีเมลฟิชชิ่ง (Phishing Email)? (เลือกได้หลายข้อ)",
+          type: "multi_select",
+          options: [
+            "สร้างความรู้สึกเร่งด่วน",
+            "มีข้อผิดพลาดทางไวยากรณ์",
+            "มาจากผู้ส่งที่ไม่รู้จัก",
+            "มีลิงก์น่าสงสัย",
+          ],
+          answer: [
+            "สร้างความรู้สึกเร่งด่วน",
+            "มีข้อผิดพลาดทางไวยากรณ์",
+            "มาจากผู้ส่งที่ไม่รู้จัก",
+            "มีลิงก์น่าสงสัย",
+          ],
+          hint: "มิจฉาชีพมักจะสร้างความรู้สึกเร่งด่วนและใช้ภาษาที่ดูไม่เป็นทางการ",
+        },
+        // ชุดที่ 3
+        {
+          question:
+            "กฎหมายใดที่เกี่ยวข้องกับการคุ้มครองข้อมูลส่วนบุคคลในประเทศไทย",
+          type: "mcq",
+          options: [
+            "พ.ร.บ. คอมพิวเตอร์",
+            "พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)",
+            "พ.ร.บ. ลิขสิทธิ์",
+            "ประมวลกฎหมายอาญา",
+          ],
+          answer: "พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)",
+          hint: "เป็นกฎหมายที่ให้ความสำคัญกับสิทธิของเจ้าของข้อมูล",
+        },
+        {
+          question:
+            "การคัดลอกผลงานของผู้อื่นมาใช้โดยไม่อ้างอิงแหล่งที่มา ไม่ถือเป็นการละเมิดลิขสิทธิ์",
+          type: "true_false",
+          answer: "ผิด",
+          hint: "เป็นการละเมิดทรัพย์สินทางปัญญาอย่างหนึ่ง",
+        },
+        {
+          question: "สัญญาอนุญาต Creative Commons (CC) คืออะไร",
+          type: "mcq",
+          options: [
+            "โปรแกรมป้องกันไวรัส",
+            "มาตรฐานความปลอดภัยเว็บไซต์",
+            "สัญญาอนุญาตที่ให้เจ้าของผลงานกำหนดเงื่อนไขให้ผู้อื่นนำผลงานไปใช้ได้",
+            "สกุลเงินดิจิทัล",
+          ],
+          answer:
+            "สัญญาอนุญาตที่ให้เจ้าของผลงานกำหนดเงื่อนไขให้ผู้อื่นนำผลงานไปใช้ได้",
+          hint: "ทำให้การแบ่งปันผลงานสร้างสรรค์ทำได้ง่ายขึ้นภายใต้เงื่อนไขที่กำหนด",
+        },
+        {
+          question: "จับคู่สัญลักษณ์ Creative Commons กับความหมาย",
+          type: "matching",
+          pairs: [
+            { item: "รูปคน (BY)", match: "ต้องอ้างอิงแหล่งที่มา" },
+            {
+              item: "เครื่องหมายดอลลาร์ขีดฆ่า (NC)",
+              match: "ห้ามใช้เพื่อการค้า",
+            },
+            { item: "เครื่องหมายเท่ากับ (ND)", match: "ห้ามดัดแปลง" },
+            {
+              item: "ลูกศรวน (SA)",
+              match: "ต้องอนุญาตให้ผู้อื่นใช้ต่อภายใต้สัญญาเดียวกัน",
+            },
+          ],
+          options: [
+            "ต้องอ้างอิงแหล่งที่มา",
+            "ห้ามใช้เพื่อการค้า",
+            "ห้ามดัดแปลง",
+            "ต้องอนุญาตให้ผู้อื่นใช้ต่อภายใต้สัญญาเดียวกัน",
+          ],
+          hint: "สัญลักษณ์แต่ละตัวมีความหมายเฉพาะในการใช้งาน",
+        },
+        {
+          question: "ข้อใดคือความหมายของ 'สุขภาพดิจิทัล' (Digital Health)",
+          type: "mcq",
+          options: [
+            "ภาวะความสมบูรณ์ของร่างกายและจิตใจจากการใช้เทคโนโลยีดิจิทัล",
+            "การซื้อขายอุปกรณ์ไอที",
+            "การซ่อมคอมพิวเตอร์",
+            "การเขียนโปรแกรม",
+          ],
+          answer: "ภาวะความสมบูรณ์ของร่างกายและจิตใจจากการใช้เทคโนโลยีดิจิทัล",
+          hint: "เกี่ยวข้องกับความเป็นอยู่ที่ดีทั้งกายและใจในการใช้สื่อดิจิทัล",
+        },
+        {
+          question:
+            "ข้อใดคืออาการของ 'โรคติดโซเชียล' (Social Media Addiction)? (เลือกได้หลายข้อ)",
+          type: "multi_select",
+          options: [
+            "กระวนกระวายเมื่อไม่ได้เล่น",
+            "ใช้เวลาบนโซเชียลมากขึ้นเรื่อยๆ",
+            "เปรียบเทียบตัวเองกับคนอื่นจนรู้สึกแย่",
+            "สุขภาพร่างกายแข็งแรงขึ้น",
+          ],
+          answer: [
+            "กระวนกระวายเมื่อไม่ได้เล่น",
+            "ใช้เวลาบนโซเชียลมากขึ้นเรื่อยๆ",
+            "เปรียบเทียบตัวเองกับคนอื่นจนรู้สึกแย่",
+          ],
+          hint: "สังเกตพฤติกรรมและความรู้สึกของตัวเองเมื่อใช้โซเชียลมีเดีย",
+        },
+        {
+          question:
+            "การหยุดพักสายตาจากหน้าจอทุกๆ 20 นาที เป็นวิธีดูแลสุขภาพดิจิทัลที่ดี",
+          type: "true_false",
+          answer: "ถูก",
+          hint: "ใช้กฎ 20-20-20: ทุก 20 นาที มองไกล 20 ฟุต เป็นเวลา 20 วินาที",
+        },
+        {
+          question:
+            "การแสดงพฤติกรรมที่เป็นอันตรายต่อผู้อื่นผ่านโซเชียลมีเดีย เรียกว่า ______",
+          type: "text_fill",
+          answer: "การล่วงละเมิดทางไซเบอร์",
+          hint: "คล้ายกับการกลั่นแกล้ง แต่เกิดขึ้นในโลกออนไลน์",
+        },
+        {
+          question:
+            "ข้อใดคือผลกระทบที่อาจเกิดขึ้นจากการล่วงละเมิดทางไซเบอร์? (เลือกได้หลายข้อ)",
+          type: "multi_select",
+          options: [
+            "ผลการเรียนตกต่ำ",
+            "แยกตัวออกจากสังคม",
+            "วิตกกังวล ซึมเศร้า",
+            "ได้รับรางวัล",
+            "ทานอาหารและนอนไม่เป็นเวลา",
+          ],
+          answer: [
+            "ผลการเรียนตกต่ำ",
+            "แยกตัวออกจากสังคม",
+            "วิตกกังวล ซึมเศร้า",
+            "ทานอาหารและนอนไม่เป็นเวลา",
+          ],
+          hint: "ส่งผลเสียต่อทั้งจิตใจ, สังคม, และร่างกาย",
+        },
+        {
+          question: "หากถูกระรานทางไซเบอร์ ควรทำอย่างไรเป็นอันดับแรก",
+          type: "mcq",
+          options: [
+            "ตอบโต้ด้วยความรุนแรง",
+            "หยุดการติดต่อและเก็บหลักฐาน",
+            "ลบบัญชีโซเชียลมีเดียทิ้ง",
+            "เก็บเรื่องไว้คนเดียว",
+          ],
+          answer: "หยุดการติดต่อและเก็บหลักฐาน",
+          hint: "การไม่ตอบโต้และเก็บหลักฐานไว้เป็นสิ่งสำคัญที่สุดในการรับมือ",
+        },
+      ];
+
+      // DOM Elements
+      const startScreen = document.getElementById("start-screen");
+      const gameScreen = document.getElementById("game-screen");
+      const certificateScreen = document.getElementById("certificate-screen");
+      const playerNameInput = document.getElementById("player-name");
+      const startBtn = document.getElementById("start-btn");
+      const questionCounter = document.getElementById("question-counter");
+      const scoreCounter = document.getElementById("score-counter");
+      const questionText = document.getElementById("question-text");
+      const answerArea = document.getElementById("answer-area");
+      const hintBtn = document.getElementById("hint-btn");
+      const submitBtn = document.getElementById("submit-btn");
+      const feedbackArea = document.getElementById("feedback-area");
+      const certificateName = document.getElementById("certificate-name");
+      const certificateScore = document.getElementById("certificate-score");
+      const playAgainBtn = document.getElementById("play-again-btn");
+      const startFeedback = document.getElementById("start-feedback");
+      const downloadBtn = document.getElementById("download-btn");
+      const answerSummary = document.getElementById("answer-summary");
+      const certificateWrapper = document.getElementById("certificate-wrapper");
+
+      // Game State
+      let currentQuestionIndex = 0;
+      let score = 0;
+      let playerName = "";
+      let selectedAnswer = null;
+      let gameResults = [];
+
+      // Event Listeners
+      startBtn.addEventListener("click", startGame);
+      submitBtn.addEventListener("click", checkAnswer);
+      hintBtn.addEventListener("click", showHint);
+      playAgainBtn.addEventListener("click", restartGame);
+      downloadBtn.addEventListener("click", downloadCertificate);
+
+      function startGame() {
+        playerName = playerNameInput.value.trim();
+        if (playerName === "") {
+          startFeedback.textContent = "กรุณากรอกชื่อเพื่อเริ่มเกม!";
+          return;
+        }
+        startFeedback.textContent = "";
+        startScreen.classList.add("hidden");
+        gameScreen.classList.remove("hidden");
+        displayQuestion();
+      }
+
+      function displayQuestion() {
+        resetQuestionState();
+        const currentQuestion = questions[currentQuestionIndex];
+        questionCounter.textContent = `คำถาม ${currentQuestionIndex + 1}/${
+          questions.length
+        }`;
+        questionText.textContent = currentQuestion.question;
+
+        answerArea.innerHTML = "";
+        switch (currentQuestion.type) {
+          case "mcq":
+            createMCQOptions(currentQuestion);
+            break;
+          case "sequence":
+            createSequence(currentQuestion);
+            break;
+          case "multi_select":
+            createMultiSelect(currentQuestion);
+            break;
+          case "text_fill":
+            createTextFill(currentQuestion);
+            break;
+          case "matching":
+            createMatching(currentQuestion);
+            break;
+          case "true_false":
+            createTrueFalse(currentQuestion);
+            break;
+        }
+      }
+
+      function createMCQOptions({ options }) {
+        const grid = document.createElement("div");
+        grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4 w-full";
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option;
+          button.className =
+            "answer-option p-4 border-2 border-gray-300 rounded-lg text-left";
+          button.addEventListener("click", () => {
+            document
+              .querySelectorAll(".answer-option")
+              .forEach((btn) => btn.classList.remove("selected"));
+            button.classList.add("selected");
+            selectedAnswer = option;
+          });
+          grid.appendChild(button);
+        });
+        answerArea.appendChild(grid);
+      }
+
+      function createTrueFalse() {
+        const container = document.createElement("div");
+        container.className = "flex space-x-4";
+        const options = ["ถูก", "ผิด"];
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option;
+          button.className =
+            "answer-option p-4 border-2 border-gray-300 rounded-lg w-32 text-xl font-bold";
+          button.addEventListener("click", () => {
+            document
+              .querySelectorAll(".answer-option")
+              .forEach((btn) => btn.classList.remove("selected"));
+            button.classList.add("selected");
+            selectedAnswer = option;
+          });
+          container.appendChild(button);
+        });
+        answerArea.appendChild(container);
+      }
+
+      function createSequence({ items }) {
+        const container = document.createElement("div");
+        container.className =
+          "w-full flex flex-col items-center justify-around";
+
+        const dropContainer = document.createElement("div");
+        dropContainer.id = "sequence-drops";
+        dropContainer.className =
+          "flex flex-col space-y-2 w-full p-4 bg-gray-100 rounded-lg mb-4";
+        for (let i = 0; i < items.length; i++) {
+          const dropZone = document.createElement("div");
+          dropZone.className =
+            "drop-zone w-full h-16 flex items-center justify-center rounded-lg text-gray-500";
+          dropZone.textContent = `ตำแหน่งที่ ${i + 1}`;
+          dropZone.dataset.index = i;
+          dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("drag-over");
+          });
+          dropZone.addEventListener("dragleave", () =>
+            dropZone.classList.remove("drag-over")
+          );
+          dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("drag-over");
+            const data = e.dataTransfer.getData("text/plain");
+            const sourceElement = document.getElementById(data);
+            if (dropZone.children.length > 0) {
+              document
+                .getElementById("sequence-options")
+                .appendChild(dropZone.firstElementChild);
+            }
+            dropZone.appendChild(sourceElement);
+            sourceElement.style.opacity = "1";
+          });
+          dropContainer.appendChild(dropZone);
+        }
+
+        const optionsContainer = document.createElement("div");
+        optionsContainer.id = "sequence-options";
+        optionsContainer.className =
+          "flex flex-wrap justify-center gap-2 p-2 bg-gray-100 rounded-lg";
+
+        items
+          .sort(() => Math.random() - 0.5)
+          .forEach((item, index) => {
+            // Shuffle items
+            const div = document.createElement("div");
+            div.textContent = item;
+            div.id = `seq_item_${index}`;
+            div.className =
+              "draggable p-2 bg-indigo-200 rounded-lg shadow cursor-grab";
+            div.draggable = true;
+            div.addEventListener("dragstart", (e) => {
+              e.dataTransfer.setData("text/plain", div.id);
+              setTimeout(() => {
+                div.style.opacity = "0.5";
+              }, 0);
+            });
+            div.addEventListener("dragend", () => (div.style.opacity = "1"));
+            optionsContainer.appendChild(div);
+          });
+
+        container.appendChild(dropContainer);
+        container.appendChild(optionsContainer);
+        answerArea.appendChild(container);
+      }
+
+      function createMultiSelect({ options }) {
+        const grid = document.createElement("div");
+        grid.className = "grid grid-cols-1 md:grid-cols-2 gap-4 w-full";
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option;
+          button.dataset.value = option;
+          button.className =
+            "answer-option p-4 border-2 border-gray-300 rounded-lg text-left";
+          button.addEventListener("click", () => {
+            button.classList.toggle("selected");
+          });
+          grid.appendChild(button);
+        });
+        answerArea.appendChild(grid);
+      }
+
+      function createTextFill() {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = "text-answer";
+        input.placeholder = "พิมพ์คำตอบของคุณที่นี่";
+        input.className =
+          "w-full max-w-sm p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500";
+        answerArea.appendChild(input);
+      }
+
+      function createMatching({ pairs, options }) {
+        const container = document.createElement("div");
+        container.className =
+          "w-full flex flex-col md:flex-row items-start justify-around";
+
+        const matchContainer = document.createElement("div");
+        matchContainer.className =
+          "flex flex-col space-y-2 mb-4 md:mb-0 w-full md:w-1/2";
+        matchContainer.id = "matching-drops";
+
+        const itemsContainer = document.createElement("div");
+        itemsContainer.className =
+          "flex flex-col space-y-2 w-full md:w-1/3 p-2 bg-gray-100 rounded-lg";
+
+        const shuffledItems = [...pairs].sort(() => Math.random() - 0.5);
+
+        shuffledItems.forEach((pair, index) => {
+          const div = document.createElement("div");
+          div.textContent = pair.item;
+          div.id = `match_item_${index}`;
+          div.className = "draggable p-3 bg-indigo-200 rounded-lg shadow";
+          div.draggable = true;
+          div.addEventListener("dragstart", (e) =>
+            e.dataTransfer.setData("text/plain", div.id)
+          );
+          itemsContainer.appendChild(div);
+        });
+
+        options.forEach((option) => {
+          const pairDiv = document.createElement("div");
+          pairDiv.className = "matching-pair";
+          const dropZone = document.createElement("div");
+          dropZone.className = "drop-zone matching-item";
+          dropZone.textContent = "ลากมาวางที่นี่";
+          dropZone.dataset.match = option;
+          dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("drag-over");
+          });
+          dropZone.addEventListener("dragleave", () =>
+            dropZone.classList.remove("drag-over")
+          );
+          dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("drag-over");
+            const data = e.dataTransfer.getData("text/plain");
+            const sourceElement = document.getElementById(data);
+            if (dropZone.children.length > 0) {
+              itemsContainer.appendChild(dropZone.firstElementChild);
+            }
+            dropZone.innerHTML = "";
+            dropZone.appendChild(sourceElement);
+          });
+          const itemLabel = document.createElement("div");
+          itemLabel.className = "matching-item bg-gray-200";
+          itemLabel.textContent = option;
+          pairDiv.appendChild(dropZone);
+          pairDiv.appendChild(itemLabel);
+          matchContainer.appendChild(pairDiv);
+        });
+
+        container.appendChild(matchContainer);
+        container.appendChild(itemsContainer);
+        answerArea.appendChild(container);
+      }
+
+      function checkAnswer() {
+        const currentQuestion = questions[currentQuestionIndex];
+        let userAnswer,
+          isCorrect = false;
+
+        switch (currentQuestion.type) {
+          case "mcq":
+          case "true_false":
+            userAnswer = selectedAnswer;
+            isCorrect = userAnswer === currentQuestion.answer;
+            break;
+          case "text_fill":
+            userAnswer = document.getElementById("text-answer").value.trim();
+            isCorrect =
+              userAnswer.toLowerCase() === currentQuestion.answer.toLowerCase();
+            break;
+          case "sequence":
+            userAnswer = Array.from(
+              document.querySelectorAll("#sequence-drops .drop-zone")
+            ).map((dz) =>
+              dz.children.length > 0 ? dz.children[0].textContent : ""
+            );
+            isCorrect =
+              JSON.stringify(userAnswer) ===
+              JSON.stringify(currentQuestion.answer);
+            break;
+          case "multi_select":
+            userAnswer = Array.from(
+              document.querySelectorAll(".answer-option.selected")
+            ).map((btn) => btn.dataset.value);
+            isCorrect =
+              userAnswer.length === currentQuestion.answer.length &&
+              userAnswer.every((val) => currentQuestion.answer.includes(val));
+            break;
+          case "matching":
+            const droppedItems = Array.from(
+              document.querySelectorAll("#matching-drops .drop-zone")
+            );
+            userAnswer = droppedItems.map(
+              (d) =>
+                `${
+                  d.children.length > 0 ? d.children[0].textContent : "ว่าง"
+                } -> ${d.dataset.match}`
+            );
+            isCorrect = currentQuestion.pairs.every((pair) => {
+              const dropped = droppedItems.find(
+                (d) => d.dataset.match === pair.match
+              );
+              return (
+                dropped &&
+                dropped.children.length > 0 &&
+                dropped.children[0].textContent === pair.item
+              );
+            });
+            break;
+        }
+
+        if (isCorrect) {
+          score++;
+          feedbackArea.textContent = "ถูกต้อง!";
+          feedbackArea.style.color = "green";
+        } else {
+          feedbackArea.textContent = `คำตอบผิด!`;
+          feedbackArea.style.color = "red";
+        }
+
+        gameResults.push({
+          question: currentQuestion.question,
+          userAnswer: Array.isArray(userAnswer)
+            ? userAnswer.join(", ")
+            : userAnswer || "ไม่ได้ตอบ",
+          correctAnswer: Array.isArray(currentQuestion.answer)
+            ? currentQuestion.answer.join(", ")
+            : currentQuestion.answer,
+          isCorrect: isCorrect,
+        });
+
+        scoreCounter.textContent = `คะแนน: ${score}`;
+        submitBtn.textContent = "ข้อต่อไป";
+        submitBtn.onclick = nextQuestion;
+      }
+
+      function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questions.length) {
+          displayQuestion();
+        } else {
+          showCertificate();
+        }
+      }
+
+      function showHint() {
+        feedbackArea.textContent = `คำใบ้: ${questions[currentQuestionIndex].hint}`;
+        feedbackArea.style.color = "#0e7490";
+      }
+
+      function resetQuestionState() {
+        selectedAnswer = null;
+        feedbackArea.textContent = "";
+        submitBtn.textContent = "ส่งคำตอบ";
+        submitBtn.onclick = checkAnswer;
+      }
+
+      function showCertificate() {
+        gameScreen.classList.add("hidden");
+        certificateScreen.classList.remove("hidden");
+        certificateName.textContent = playerName;
+        certificateScore.textContent = `คะแนนของคุณ: ${score} จาก ${questions.length}`;
+        displayAnswerSummary();
+      }
+
+      function displayAnswerSummary() {
+        answerSummary.innerHTML =
+          '<h3 class="text-xl font-bold mb-4 text-center text-gray-700 border-t pt-4">ทบทวนคำตอบ</h3>';
+        gameResults.forEach((result) => {
+          const resultDiv = document.createElement("div");
+          resultDiv.className = `p-3 mb-2 rounded-lg ${
+            result.isCorrect ? "bg-green-100" : "bg-red-100"
+          }`;
+
+          let answerHtml = `<p><strong>คำตอบของคุณ:</strong> ${
+            result.userAnswer
+          } ${
+            result.isCorrect
+              ? '<span class="text-green-600 font-bold">✔</span>'
+              : '<span class="text-red-600 font-bold">✖</span>'
+          }</p>`;
+          if (!result.isCorrect) {
+            answerHtml += `<p><strong>คำตอบที่ถูกต้อง:</strong> ${result.correctAnswer}</p>`;
+          }
+
+          resultDiv.innerHTML = `
+                    <p class="font-semibold text-gray-800">${result.question}</p>
+                    ${answerHtml}
+                `;
+          answerSummary.appendChild(resultDiv);
+        });
+      }
+
+      function restartGame() {
+        currentQuestionIndex = 0;
+        score = 0;
+        playerName = "";
+        gameResults = [];
+        playerNameInput.value = "";
+        scoreCounter.textContent = `คะแนน: 0`;
+        certificateScreen.classList.add("hidden");
+        startScreen.classList.remove("hidden");
+      }
+
+      function downloadCertificate() {
+        const certificateElement = document.getElementById("certificate");
+        html2canvas(certificateElement, { scale: 2 }).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = `Certificate_${playerName.replace(/\s/g, "_")}.png`;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        });
+      }
+    </script>
+  </body>
+</html>
